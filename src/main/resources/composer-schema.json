@@ -1,0 +1,40 @@
+{
+  "type": "object",
+  "required": ["layout", "sections"],
+  "properties": {
+    "layout": { "type": "string" },
+    "voice": {
+      "type": "object",
+      "properties": {
+        "tone": { "type": "string" },
+        "reading_level": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "sections": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["type"],
+        "properties": {
+          "type": { "type": "string" },
+          "asset_id": { "type": "string" },
+          "asset_ids": { "type": "array", "items": { "type": "string" } },
+          "headline": { "type": "string" },
+          "subhead": { "type": "string" },
+          "title": { "type": "string" },
+          "blurb": { "type": "string" },
+          "cta": {
+            "type": "object",
+            "properties": {
+              "text": { "type": "string" },
+              "href": { "type": "string" }
+            }
+          }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": false
+}

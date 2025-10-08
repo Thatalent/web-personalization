@@ -1,0 +1,12 @@
+<section class="hero" data-section="hero">
+  {{#img}}
+  <img src="{{path}}" alt="{{alt}}" loading="eager" fetchpriority="high" class="hero-img"/>
+  {{/img}}
+  <div class="hero-copy">
+    {{#headline}}<h1>{{headline}}</h1>{{/headline}}
+    {{#subhead}}<p class="subhead">{{subhead}}</p>{{/subhead}}
+    {{#cta}}
+      {{#href}}<a class="btn" href="{{href}}">{{text}}</a>{{/href}}
+    {{/cta}}
+  </div>
+</section>
