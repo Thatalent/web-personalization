@@ -73,8 +73,38 @@ public class ComposeController {
     // 3) Compose via LLM (JSON only)
     String sys = """
       You are a content composer. Choose a layout and SHORT copy for the provided candidate assets.
-      Output STRICT JSON with keys: layout, voice, sections[]. Avoid claims about health/finance.
-      Headlines ≤ 8 words. Keep copy concise and brand-neutral.
+      
+      OUTPUT REQUIREMENTS (STRICT):
+      - Output ONLY valid JSON (no preamble/markdown/explanation).
+      - Top-level keys: layout, voice, sections.
+      - Each section MUST reference assets by ID:
+        • For single-asset sections (e.g., hero, testimonial): include "asset_id": "<CANDIDATE_ID>"
+        • For multi-asset sections (e.g., tiles): include "asset_ids": ["<ID1>","<ID2>",...]
+      - Do NOT use a "content" object or any "image.path" fields.
+      - Use ONLY the candidate IDs provided in the input.
+      - Keep copy concise. Headlines ≤ 8 words. No health/finance claims.
+      
+      STRUCTURE (schema):
+      {
+        "layout": "string (must be one of the provided layouts)",
+        "voice": { "tone": "string", "reading_level": "string" },
+        "sections": [
+          {
+            "type": "hero" | "tiles" | "testimonial",
+            // hero & testimonial:
+            "asset_id": "string",
+            "headline": "string (optional for hero)",
+            "subhead": "string (optional for hero)",
+            "blurb": "string (optional for testimonial)",
+            "title": "string (optional for tiles/testimonial)",
+            "cta": { "text": "string", "href": "string" } (optional),
+            // tiles:
+            "asset_ids": ["string", ...] (for tiles only)
+          }
+        ]
+      }
+      
+      Your response must start with { and end with } with nothing before or after.
       """;
 
     Map<String,Object> user = Map.of(
@@ -84,10 +114,15 @@ public class ComposeController {
         "tiles",  brief(tiles, 60),
         "testimonials", brief(tests, 40),
         "layouts", List.of("hero+tiles+testimonial","hero+tiles","hero+testimonial"),
-        "schema_hint", "Match composer-schema.json strictly."
+        "schema_hint", "Match composer-schema.json strictly. Return pure JSON only."
     );
 
-    String raw = chat.prompt().system(sys).user(om.writeValueAsString(user)).call().content();
+    String raw = chat.prompt()
+        .system(sys)
+        .user(om.writeValueAsString(user))
+        .call()
+        .content()
+        .trim();
 
     // 4) Validate JSON
     JsonNode node = om.readTree(raw);
