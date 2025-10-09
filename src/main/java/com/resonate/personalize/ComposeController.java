@@ -157,6 +157,57 @@ public class ComposeController {
     return (String) body.get("html");
   }
 
+  // Component endpoint: GET /v1/component/{type}?site=acme&ids=100122,900301
+  // Returns just the HTML for a single component type (hero, tiles, testimonial)
+  @GetMapping(value = "/component/{type}", produces = MediaType.TEXT_HTML_VALUE)
+  public String renderComponent(@PathVariable String type,
+                                 @RequestParam String site,
+                                 @RequestParam String ids,
+                                 @RequestParam(defaultValue = "0") int seed) throws Exception {
+    var idList = Arrays.stream(ids.split(",")).map(String::trim).filter(s->!s.isEmpty()).sorted().toList();
+
+    // Hash IDs to get query vector
+    var qVec = idHasher.embedIds(idList);
+
+    // Retrieve candidates based on component type
+    List<Map<String,Object>> candidates;
+    Map<String, Map<String,Object>> lookup = new HashMap<>();
+
+    switch (type.toLowerCase()) {
+      case "hero" -> {
+        candidates = repo.knn(site, "hero", qVec, 1);
+        candidates.forEach(r -> lookup.put((String)r.get("id"), r));
+      }
+      case "tiles" -> {
+        candidates = repo.knn(site, "tiles", qVec, 3);
+        candidates.forEach(r -> lookup.put((String)r.get("id"), r));
+      }
+      case "testimonial" -> {
+        candidates = repo.knn(site, "testimonial", qVec, 1);
+        candidates.forEach(r -> lookup.put((String)r.get("id"), r));
+      }
+      default -> throw new IllegalArgumentException("Unknown component type: " + type);
+    }
+
+    // Build a simple component config from the database assets
+    Map<String,Object> componentConfig = new HashMap<>();
+    componentConfig.put("type", type.toLowerCase());
+
+    if (type.equalsIgnoreCase("tiles") && !candidates.isEmpty()) {
+      List<String> assetIds = candidates.stream()
+          .map(c -> (String) c.get("id"))
+          .toList();
+      componentConfig.put("asset_ids", assetIds);
+      componentConfig.put("title", ""); // No title by default
+    } else if (!candidates.isEmpty()) {
+      // For hero and testimonial - single asset
+      componentConfig.put("asset_id", candidates.get(0).get("id"));
+    }
+
+    // Render the single component
+    return renderer.renderComponent(componentConfig, lookup);
+  }
+
   private static List<Map<String,Object>> brief(List<Map<String,Object>> rows, int cap){
     return rows.stream().map(m -> Map.of(
         "id", m.get("id"),
