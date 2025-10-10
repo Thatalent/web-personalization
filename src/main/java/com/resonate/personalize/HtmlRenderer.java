@@ -1,6 +1,7 @@
 package com.resonate.personalize;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.samskivert.mustache.Mustache;
 import com.samskivert.mustache.Template;
 import org.springframework.beans.factory.annotation.Value;
@@ -38,6 +39,22 @@ public class HtmlRenderer {
     }
     out.append("<!-- personalized partial end -->");
     return out.toString();
+  }
+
+  // Render a single component from a Map config
+  public String renderComponent(Map<String,Object> config, Map<String, Map<String,Object>> assetLookup) {
+    String type = (String) config.get("type");
+
+    // Convert Map to JsonNode for compatibility with existing render methods
+    ObjectMapper mapper = new ObjectMapper();
+    JsonNode configNode = mapper.valueToTree(config);
+
+    return switch (type) {
+      case "hero" -> renderHero(configNode, assetLookup);
+      case "tiles" -> renderTiles(configNode, assetLookup);
+      case "testimonial" -> renderTestimonial(configNode, assetLookup);
+      default -> "<!-- unknown component type: " + type + " -->";
+    };
   }
 
   private String renderHero(JsonNode sec, Map<String, Map<String,Object>> lookup) {
