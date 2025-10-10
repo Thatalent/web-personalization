@@ -1,0 +1,26 @@
+server:
+  port: 8080
+
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/personalize
+    username: postgres
+    password: postgres
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema.sql
+  ai:
+    ollama:
+      base-url: http://localhost:11434
+      chat:
+        model: llama3.1:8b
+        options:
+          temperature: 0.2
+      embedding:
+        model: nomic-embed-text
+
+app:
+  assets:
+    root: assets    # put files under assets/<site>/<type>/...
+  version: "2025-10-01"

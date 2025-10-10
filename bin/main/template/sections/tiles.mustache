@@ -1,0 +1,11 @@
+<section class="tiles" data-section="tiles">
+  {{#title}}<h2>{{title}}</h2>{{/title}}
+  <div class="grid">
+    {{#items}}
+    <figure class="tile">
+      {{#img}}<img src="{{path}}" alt="{{alt}}" loading="lazy" class="tile-img"/>{{/img}}
+      {{#title}}<figcaption>{{title}}</figcaption>{{/title}}
+    </figure>
+    {{/items}}
+  </div>
+</section>

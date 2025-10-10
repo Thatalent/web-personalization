@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS asset (
                                      caption    TEXT,
                                      path       TEXT NOT NULL,          -- local path, e.g. assets/acme/hero/hero1.jpg
                                      meta       JSONB DEFAULT '{}'::jsonb,
-                                     embedding  VECTOR(64)
+                                     embedding  VECTOR(768)
 );
 
 CREATE INDEX IF NOT EXISTS asset_site_idx ON asset (site);

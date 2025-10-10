@@ -41,44 +41,54 @@ public class HtmlRenderer {
   }
 
   private String renderHero(JsonNode sec, Map<String, Map<String,Object>> lookup) {
-    Template t = load("templates/sections/hero.mustache");
+    Template t = load("template/sections/hero.mustache");
     Map<String,Object> model = new HashMap<>();
-    model.put("headline", text(sec,"headline"));
-    model.put("subhead", text(sec,"subhead"));
+
+    // Use asset_id to lookup from database
+    String assetId = text(sec, "asset_id");
+    Map<String,Object> asset = lookup.get(assetId);
+
+    if (asset != null) {
+      // Use LLM's custom headline/subhead if provided, otherwise fall back to asset data
+      model.put("headline", sec.has("headline") ? text(sec, "headline") : asset.getOrDefault("title", ""));
+      model.put("subhead", sec.has("subhead") ? text(sec, "subhead") : asset.getOrDefault("caption", ""));
+
+      String imgPath = (String) asset.get("path");
+      if (imgPath != null && !imgPath.isEmpty()) {
+        Map<String,Object> img = Map.of(
+            "path", toAbsolutePath(imgPath),
+            "alt", asset.getOrDefault("title", "")
+        );
+        model.put("img", img);
+      }
+    }
+
     if (sec.has("cta")) {
       Map<String,String> cta = new HashMap<>();
       cta.put("text", text(sec.get("cta"), "text"));
       cta.put("href", text(sec.get("cta"), "href"));
       model.put("cta", cta);
     }
-    String assetId = text(sec,"asset_id");
-    if (!assetId.isEmpty() && lookup.containsKey(assetId)) {
-      Map<String,Object> a = lookup.get(assetId);
-      Map<String,Object> img = Map.of(
-          "path", (String)a.get("path"),
-          "alt", Optional.ofNullable((String)a.get("title")).orElse(""),
-          "exists", AssetRepository.fileExists((String)a.get("path"))
-      );
-      model.put("img", img);
-    }
+
     return t.execute(model);
   }
 
   private String renderTiles(JsonNode sec, Map<String, Map<String,Object>> lookup) {
-    Template t = load("templates/sections/tiles.mustache");
+    Template t = load("template/sections/tiles.mustache");
     Map<String,Object> model = new HashMap<>();
-    model.put("title", text(sec,"title"));
+    model.put("title", text(sec, "title"));
+
     List<Map<String,Object>> items = new ArrayList<>();
-    if (sec.has("asset_ids")) {
-      for (JsonNode idn : sec.get("asset_ids")) {
-        String id = idn.asText();
-        if (lookup.containsKey(id)) {
-          Map<String,Object> a = lookup.get(id);
+    if (sec.has("asset_ids") && sec.get("asset_ids").isArray()) {
+      for (JsonNode idNode : sec.get("asset_ids")) {
+        String assetId = idNode.asText();
+        Map<String,Object> asset = lookup.get(assetId);
+        if (asset != null) {
           items.add(Map.of(
-              "title", Optional.ofNullable((String)a.get("title")).orElse(""),
+              "title", asset.getOrDefault("title", ""),
               "img", Map.of(
-                  "path", (String)a.get("path"),
-                  "alt", Optional.ofNullable((String)a.get("caption")).orElse("")
+                  "path", toAbsolutePath((String) asset.get("path")),
+                  "alt", asset.getOrDefault("title", "")
               )
           ));
         }
@@ -89,18 +99,27 @@ public class HtmlRenderer {
   }
 
   private String renderTestimonial(JsonNode sec, Map<String, Map<String,Object>> lookup) {
-    Template t = load("templates/sections/testimonial.mustache");
+    Template t = load("template/sections/testimonial.mustache");
     Map<String,Object> model = new HashMap<>();
-    model.put("blurb", text(sec,"blurb"));
-    model.put("title", text(sec,"title"));
-    String assetId = text(sec,"asset_id");
-    if (!assetId.isEmpty() && lookup.containsKey(assetId)) {
-      Map<String,Object> a = lookup.get(assetId);
-      model.put("img", Map.of(
-          "path", (String)a.get("path"),
-          "alt", Optional.ofNullable((String)a.get("title")).orElse("Avatar")
-      ));
+
+    // Use asset_id to lookup from database
+    String assetId = text(sec, "asset_id");
+    Map<String,Object> asset = lookup.get(assetId);
+
+    if (asset != null) {
+      // Use LLM's custom blurb if provided, otherwise use asset caption
+      model.put("blurb", sec.has("blurb") ? text(sec, "blurb") : asset.getOrDefault("caption", ""));
+      model.put("title", asset.getOrDefault("title", ""));
+
+      String imgPath = (String) asset.get("path");
+      if (imgPath != null && !imgPath.isEmpty()) {
+        model.put("img", Map.of(
+            "path", toAbsolutePath(imgPath),
+            "alt", asset.getOrDefault("title", "")
+        ));
+      }
     }
+
     return t.execute(model);
   }
 
@@ -117,5 +136,11 @@ public class HtmlRenderer {
 
   private static String text(JsonNode node, String key) {
     return node.has(key) && !node.get(key).isNull() ? node.get(key).asText("") : "";
+  }
+
+  // Convert relative path (assets/acme/hero/hero1.jpg) to absolute URL (/assets/acme/hero/hero1.jpg)
+  private static String toAbsolutePath(String path) {
+    if (path == null || path.isEmpty()) return "";
+    return path.startsWith("/") ? path : "/" + path;
   }
 }
