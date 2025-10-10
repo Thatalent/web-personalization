@@ -6,7 +6,7 @@ import java.util.Random;
 
 @Component
 public class IdHasher {
-  private static final int D = 64;
+  private static final int D = 768;
 
   public float[] embedIds(List<String> ids) {
     float[] v = new float[D];

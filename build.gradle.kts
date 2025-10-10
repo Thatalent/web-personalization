@@ -22,6 +22,7 @@ dependencies {
     implementation("com.networknt:json-schema-validator:1.4.0")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     implementation("org.springframework.ai:spring-ai-pgvector-store-spring-boot-starter")
+    implementation("com.opencsv:opencsv:5.9")
 }
 
 tasks.withType<Test> { useJUnitPlatform() }
