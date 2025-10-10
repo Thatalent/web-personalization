@@ -100,6 +100,34 @@ public class PersonalizeController {
     return "redirect:" + url; // so client can handle as a redirect
   }
 
+  // --- GET /personalize/text -> returns personalized text content ---
+  @GetMapping(value = "/personalize/text", produces = MediaType.TEXT_PLAIN_VALUE)
+  public String getText(
+      @RequestParam String site,
+      @RequestParam String component,
+      @RequestParam(required = false) String ids,
+      @RequestParam(required = false) Float alpha,
+      @RequestParam(required = false) Float beta
+  ) {
+    List<String> idList = ids == null ? List.of()
+        : Arrays.stream(ids.split(","))
+            .map(String::trim)
+            .map(s -> s.replace("{","").replace("}",""))
+            .filter(s -> !s.isEmpty())
+            .collect(Collectors.toList());
+    
+    // Get hints for personalization
+    List<String> normalizedIds = idList.stream()
+        .map(AttributeCatalog::normalizeId)
+        .sorted()
+        .toList();
+    String hints = catalog.hintsFor(normalizedIds, 24);
+    
+    // Generate personalized text based on component type
+    String content = generatePersonalizedText(component, hints);
+    return content;
+  }
+
   // --- POST (same contract, body JSON) ---
   @PostMapping(value = "/personalize", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   public Map<String,Object> post(@RequestBody Req req) {
@@ -252,6 +280,56 @@ public class PersonalizeController {
     } catch (Exception e) {
       // Fallback to default if LLM call fails
       return "Inspire a prospective learner about flexible, supportive education.";
+    }
+  }
+
+  private String generatePersonalizedText(String component, String hints) {
+    if ("dream".equals(component)) {
+      return generateDreamText(hints);
+    } else if ("course".equals(component)) {
+      return generateCourseText(hints);
+    } else {
+      return "Discover your potential with our flexible, personalized education programs.";
+    }
+  }
+
+  private String generateDreamText(String hints) {
+    String sys = """
+      You write compelling educational content about "Competency-Based Education Is Breaking Tradition".
+      Connect this concept to the user's sports dreams and athletic goals. Show how competency-based 
+      education can help them balance their athletic pursuits with academic achievement.
+      Keep it concise (max 50 words), inspirational, and focused on their athletic dreams.
+      Output plain text only, no quotes or formatting.
+      """;
+    
+    String userPrompt = "User attributes: " + hints + 
+        "\nExplain how Competency-Based Education Is Breaking Tradition can help them achieve their athletic dreams and goals.";
+    
+    try {
+      String generated = chat.prompt().system(sys).user(userPrompt).call().content();
+      return generated.trim().replaceAll("\"", "").replaceAll("\\s+", " ");
+    } catch (Exception e) {
+      return "Competency-Based Education Is Breaking Tradition - advance at your own pace while pursuing your athletic dreams.";
+    }
+  }
+
+  private String generateCourseText(String hints) {
+    String sys = """
+      You write compelling educational content about "Use What You Know to Graduate Faster".
+      Connect this concept to the user's academic and career interests shown in their attributes.
+      Show how they can leverage their existing knowledge and experience to accelerate their studies.
+      Keep it concise (max 50 words), practical, and focused on their specific field of interest.
+      Output plain text only, no quotes or formatting.
+      """;
+    
+    String userPrompt = "User attributes: " + hints + 
+        "\nExplain how 'Use What You Know to Graduate Faster' applies to their academic/career interests.";
+    
+    try {
+      String generated = chat.prompt().system(sys).user(userPrompt).call().content();
+      return generated.trim().replaceAll("\"", "").replaceAll("\\s+", " ");
+    } catch (Exception e) {
+      return "Use What You Know to Graduate Faster - leverage your experience to accelerate your academic journey.";
     }
   }
 }
