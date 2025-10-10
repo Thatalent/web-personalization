@@ -25,6 +25,6 @@ app:
     root: assets
     version: "2025-10-01"
     attributes:
-      csv: "file:./attribute_mapping.csv"   # path to your CSV (can be file: or classpath:)
+      csv: "classpath:attribute_mapping.csv"   # path to your CSV (can be file: or classpath:)
       enabled: true
 

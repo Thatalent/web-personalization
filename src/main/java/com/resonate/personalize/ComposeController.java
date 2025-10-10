@@ -37,7 +37,7 @@ public class ComposeController {
                            HtmlRenderer renderer,
                            ObjectMapper om,
                            @Value("${app.assets.root:assets}") String assetsRoot,
-                           @Value("${app.version}") String version) throws Exception {
+                           @Value("${app.assets.version}") String version) throws Exception {
     this.idHasher = idHasher;
     this.repo = repo;
     this.chat = chat;

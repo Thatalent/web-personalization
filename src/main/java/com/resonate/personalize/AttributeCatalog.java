@@ -20,9 +20,10 @@ public class AttributeCatalog {
   private final Map<String, String> idToName = new HashMap<>();
 
   public AttributeCatalog(@Value("${app.attributes.enabled:true}") boolean enabled,
-                          @Value("${app.attributes.csv:}") Resource csv) {
+                          @Value("${app.attributes.csv:classpath:attribute_mapping.csv}") Resource csv) {
     this.enabled = enabled;
-    if (enabled && csv != null) {
+    System.out.println("AttributeCatalog: enabled=" + enabled + ", csv=" + csv + ", exists=" + (csv != null && csv.exists()));
+    if (enabled && csv != null && csv.exists()) {
       try (var in = csv.getInputStream();
            var rdr = new CSVReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
         String[] header = rdr.readNext();
@@ -30,8 +31,11 @@ public class AttributeCatalog {
         int idIdx = -1, nameIdx = -1;
         for (int i = 0; i < header.length; i++) {
           String h = header[i] == null ? "" : header[i].trim();
-          if (h.equalsIgnoreCase("Attribute_Id")) idIdx = i;
-          if (h.equalsIgnoreCase("Attribute_Name")) nameIdx = i;
+          // Remove any potential BOM or hidden characters
+          h = h.replaceAll("\\uFEFF", "").trim();
+          System.out.println("Header[" + i + "]: '" + h + "' (length=" + h.length() + ")");
+          if (h.equalsIgnoreCase("Attribute_Id") || h.contains("Attribute_Id")) idIdx = i;
+          if (h.equalsIgnoreCase("Attribute_Name") || h.contains("Attribute_Name")) nameIdx = i;
         }
         if (idIdx < 0 || nameIdx < 0) return;
 

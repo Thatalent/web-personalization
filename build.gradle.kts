@@ -23,6 +23,7 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     implementation("org.springframework.ai:spring-ai-pgvector-store-spring-boot-starter")
     implementation("com.opencsv:opencsv:5.9")
+    implementation("info.picocli:picocli:4.7.6")
 }
 
 tasks.withType<Test> { useJUnitPlatform() }
